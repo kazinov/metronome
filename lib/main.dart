@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:audioplayers/audio_cache.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:numberpicker/numberpicker.dart';
 
 void main() => runApp(MyApp());
 
@@ -67,6 +68,7 @@ class _MetronomePageState extends State<MetronomePage> {
   final AudioCache audioCache = AudioCache();
   AudioPlayer audioPlayer;
   Timer timer;
+  int _currentBpm = 90;
 
   @override
   void initState() {
@@ -98,6 +100,12 @@ class _MetronomePageState extends State<MetronomePage> {
     print('on play clicked');
   }
 
+  void onBpmChanged(num value) {
+    setState(() {
+      _currentBpm = value;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,6 +116,11 @@ class _MetronomePageState extends State<MetronomePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              new NumberPicker.integer(
+                  initialValue: _currentBpm,
+                  minValue: 40,
+                  maxValue: 200,
+                  onChanged: onBpmChanged),
               RoundButton(
                 icon: Icons.stop,
                 onPressed: onStop,
