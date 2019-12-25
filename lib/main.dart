@@ -4,6 +4,7 @@ import 'package:audioplayers/audio_cache.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:numberpicker/numberpicker.dart';
+import 'package:rxdart/rxdart.dart';
 
 void main() => runApp(MyApp());
 
@@ -66,6 +67,9 @@ const oneSec = const Duration(seconds: 1);
 
 class _MetronomePageState extends State<MetronomePage> {
   final AudioCache audioCache = AudioCache();
+  final dispose$ = PublishSubject();
+  final restart$ = PublishSubject();
+
   AudioPlayer audioPlayer;
   Timer timer;
   int _currentBpm = 90;
@@ -73,7 +77,23 @@ class _MetronomePageState extends State<MetronomePage> {
   @override
   void initState() {
     super.initState();
+    _loadClick();
+    _setupRestart();
+  }
+
+  _setupRestart() {
+    restart$
+        .takeUntil(dispose$)
+        .debounceTime(Duration(milliseconds: 200))
+        .listen((event) {
+      print('restart');
+      onPlay();
+    });
+  }
+
+  _loadClick() {
     audioCache.load('audio/click-1.mp3');
+    print('loaded');
   }
 
   @override
@@ -81,6 +101,8 @@ class _MetronomePageState extends State<MetronomePage> {
     super.dispose();
     timer.cancel();
     timer = null;
+    dispose$.add(null);
+    dispose$.close();
   }
 
   void onStop() {
@@ -92,11 +114,21 @@ class _MetronomePageState extends State<MetronomePage> {
   }
 
   void onPlay() {
-    if (timer == null) {
-      timer = new Timer.periodic(oneSec, (Timer t) {
-        audioCache.play('audio/click-1.mp3');
-      });
+    if (timer != null) {
+      timer.cancel();
     }
+    if (audioPlayer != null) {
+      audioPlayer.stop();
+    }
+
+    final duration = Duration(milliseconds: (60000 / _currentBpm).round());
+    timer = new Timer.periodic(duration, (Timer t) async {
+      if (audioPlayer != null) {
+        audioPlayer.stop();
+      }
+      print('play');
+      audioPlayer = await audioCache.play('audio/click-1.mp3');
+    });
     print('on play clicked');
   }
 
@@ -104,6 +136,8 @@ class _MetronomePageState extends State<MetronomePage> {
     setState(() {
       _currentBpm = value;
     });
+
+    restart$.add(null);
   }
 
   @override
